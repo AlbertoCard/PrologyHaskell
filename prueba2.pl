@@ -102,7 +102,7 @@ contiene_Mula55(Fichas, N):-
     member([5,5], Fichas)
     -> write("El "), write(JugadorEnTurno), write(" tiene la mula del 5"), nl,
         colocarMula5,
-        jugar,
+        cambiarTurno(JugadorEnTurno),
     	!
     ; 
     	retract(turno(JugadorEnTurno)),
@@ -147,7 +147,8 @@ jugar:-
     turno(Jugador),
     write("Turno del jugador: "), write(Jugador), nl,
     tieneFichas(Jugador) -> 
-        puedeColocarFicha(Jugador)
+        puedeColocarFicha(Jugador),
+        cambiarTurno(Jugador)
     ;
         write("El jugador no tiene fichas"), nl,
         terminar_juego.
@@ -179,7 +180,7 @@ colocarMula5:-
     retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
     retract(fila_horizontal(FilaH)), assertz(fila_horizontal([5,5|FilaH])),
     retract(fila_vertical(FilaV)), assertz(fila_vertical([5,5|FilaV])),
-    sumaPuntaje(Jugador),
+    sumarPuntaje(Jugador),
     write("La mula del 5 ha sido colocada"), nl.
 
 
@@ -189,57 +190,79 @@ puedeColocarFicha(Jugador) :-
     extremos([Arr, Ab, Iz, De]),
     jugador(Jugador, Fichas),
     (
-        member([Arr, Extremo], Fichas), Ficha = [Arr, Extremo], select(Ficha, Fichas, FichasNuevas),
-        retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
-        retract(extremos([_, Ab, Iz, De])), assertz(extremos([Extremo, Ab, Iz, De])),
-        retract(fila_vertical(FilaV)), assertz(fila_vertical([Ficha|FilaV])),
-        ;   
-        member([Ab, Extremo], Fichas), Ficha = [Ab, Extremo], select(Ficha, Fichas, FichasNuevas),
-        retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
-        retract(extremos([Arr, _, Iz, De])), assertz(extremos([Arr, Extremo, Iz, De])),
-        retract(fila_vertical(FilaV)), assertz(fila_vertical([Ficha|FilaV])),
-        ;   
-        member([Iz, Extremo], Fichas), Ficha = [Iz, Extremo], select(Ficha, Fichas, FichasNuevas),
-        retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
-        retract(extremos([Arr, Ab, _, De])), assertz(extremos([Arr, Ab, Extremo, De])),
-        retract(fila_horizontal(FilaH)), assertz(fila_horizontal([Ficha|FilaH])),
-        ;   
-        member([De, Extremo], Fichas), Ficha = [De, Extremo], select(Ficha, Fichas, FichasNuevas),
-        retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
-        retract(extremos([Arr, Ab, Iz, _])), assertz(extremos([Arr, Ab, Iz, Extremo])),
-        ;   
-        member([Extremo, Arr], Fichas), Ficha = [Extremo, Arr], select(Ficha, Fichas, FichasNuevas),
-        retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
-        retract(extremos([_, Ab, Iz, De])), assertz(extremos([Extremo, Ab, Iz, De])),
-        retract(fila_vertical(FilaV)), assertz(fila_vertical([Ficha|FilaV])),
-        ;   
-        member([Extremo, Ab], Fichas), Ficha = [Extremo, Ab], select(Ficha, Fichas, FichasNuevas),
-        retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
-        retract(extremos([Arr, _, Iz, De])), assertz(extremos([Arr, Extremo, Iz, De])),
-        retract(fila_vertical(FilaV)), assertz(fila_vertical([Ficha|FilaV])),
-        ;   
-        member([Extremo, Iz], Fichas), Ficha = [Extremo, Iz], select(Ficha, Fichas, FichasNuevas),
-        retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
-        retract(extremos([Arr, Ab, _, De])), assertz(extremos([Arr, Ab, Extremo, De])),
-        retract(fila_horizontal(FilaH)), assertz(fila_horizontal([Ficha|FilaH])),
-        ;   
-        member([Extremo, De], Fichas), Ficha = [Extremo, De], select(Ficha, Fichas, FichasNuevas),
-        retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
-        retract(extremos([Arr, Ab, Iz, _])), assertz(extremos([Arr, Ab, Iz, Extremo])),
-        retract(fila_horizontal(FilaH)), assertz(fila_horizontal([Ficha|FilaH]))
-    ) -> 
-        write("El jugador coloca la ficha :"), write(Ficha), nl,
-        sumarPuntaje(Jugador),
-        cambiarTurno(Jugador)
-    ;
-        write("El jugador no puede poner una ficha"), nl,
+        % Verificar si alguna ficha puede colocarse en alguno de los extremos
+            member([Arr, _], Fichas) -> Lugar = "arriba"
+        ;   member([Ab, _], Fichas) -> Lugar = "abajo"
+        ;   member([Iz, _], Fichas) -> Lugar = "izquierda"
+        ;   member([De, _], Fichas) -> Lugar = "derecha"
+        ;   member([_, Arr], Fichas) ->  Lugar = "arriba"
+        ;   member([_, Ab], Fichas) -> Lugar = "abajo"
+        ;   member([_, Iz], Fichas) -> Lugar = "izquierda"
+        ;   member([_, De], Fichas) -> Lugar = "derecha"
+    )
+    ->  %write("El jugador puede poner la ficha "), write(Lugar), nl,
+        colocarFicha(Jugador, Lugar)
+    ;   write("El jugador no tiene fichas que pueda poner"), nl,
         hayFichasReserva -> 
             (   write("El jugador roba una ficha"), nl,
-            robarFicha(Jugador),
-            puedeColocarFicha(Jugador))
+            robarFicha(Jugador))
         ;
             write("No hay fichas para robar"), nl,
             terminar_juego.
+
+
+
+%Colocar una ficha en el tablero
+colocarFicha(Jugador, Lugar) :-
+    extremos([Arr, Ab, Iz, De]),
+    jugador(Jugador, Fichas),
+    (
+        Lugar == "arriba",
+        (
+            member([Arr, Extremo], Fichas) -> Ficha = [Arr, Extremo]
+            ;   
+            member([Extremo, Arr], Fichas) -> Ficha = [Extremo, Arr]
+        )
+    ;   Lugar == "abajo",
+        (
+            member([Ab, Extremo], Fichas) -> Ficha = [Ab, Extremo]
+            ;   
+            member([Extremo, Ab], Fichas) -> Ficha = [Extremo, Ab]
+        )
+    ;   Lugar == "izquierda",
+        (
+            member([Iz, Extremo], Fichas) -> Ficha = [Iz, Extremo]
+            ;   
+            member([Extremo, Iz], Fichas) -> Ficha = [Extremo, Iz]
+        )
+    ;   Lugar == "derecha",
+        (
+            member([De, Extremo], Fichas) -> Ficha = [De, Extremo]
+            ;   
+            member([Extremo, De], Fichas) -> Ficha = [Extremo, De]
+        )
+    ),
+    select(Ficha, Fichas, FichasNuevas),
+    retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
+    (
+        Lugar == "arriba" -> 
+            (retract(extremos([_, Ab, Iz, De])), assertz(extremos([Extremo, Ab, Iz, De])),
+            retract(fila_vertical(FilaV)), assertz(fila_vertical([Ficha|FilaV])))
+        ;   Lugar == "abajo" -> 
+            (retract(extremos([Arr, _, Iz, De])), assertz(extremos([Arr, Extremo, Iz, De])),
+            retract(fila_vertical(FilaV)), assertz(fila_vertical([Ficha|FilaV])))
+        ;   Lugar == "izquierda" -> 
+            (retract(extremos([Arr, Ab, _, De])), assertz(extremos([Arr, Ab, Extremo, De])),
+            retract(fila_horizontal(FilaH)), assertz(fila_horizontal([Ficha|FilaH])))
+        ;   Lugar == "derecha" -> 
+            (retract(extremos([Arr, Ab, Iz, _])), assertz(extremos([Arr, Ab, Iz, Extremo])),
+            retract(fila_horizontal(FilaH)), assertz(fila_horizontal([Ficha|FilaH])))
+    ),
+    sumarPuntaje(Jugador),
+    write("La ficha "), write(Ficha), write(" ha sido colocada en la fila "), write(Lugar), nl.
+
+
+
 
 
 
@@ -257,6 +280,8 @@ hayFichasReserva:-
     length(Fichas, N),
     N > 0.
 
+
+
 %Robar una ficha
 robarFicha(Jugador):-
     jugador(Jugador, Fichas),
@@ -265,7 +290,8 @@ robarFicha(Jugador):-
     append(Fichas, [Ficha], FichasNuevas),
     retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
     retract(fichas(_)), assertz(fichas(FichasReservaNuevas)),
-    write("El jugador roba la ficha: "), write(Ficha), nl.
+    write("El jugador roba la ficha: "), write(Ficha), nl,
+    puedeColocarFicha(Jugador).
 
 
 
@@ -282,8 +308,6 @@ sumarPuntaje(jugador2):-
     extremos([Arr, Ab, Iz, De]),
     PuntajeJ2N is PuntajeJ2 + Arr + Ab + Iz + De,
     retract(puntaje(_)), assertz(puntaje([PuntajeJ1, PuntajeJ2N])).
-
-
 
 
 
