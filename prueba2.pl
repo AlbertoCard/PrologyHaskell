@@ -6,7 +6,7 @@ extremos([0,0,0,0]).
 %Variable para señalar en qué extremo hay mula
 :- dynamic mula/1.
 %mula(Arr, Ab, Iz, De).
-mula([0,0,0,0]).
+mula([1,1,1,1]).
 
 %Variables para la fila horizontal y vertical
 :- dynamic fila_horizontal/1.
@@ -38,6 +38,11 @@ jugador(jugador2,[]).
 :- dynamic turno/1.
 %turno(J1).
 turno(jugador1).
+
+%Variable con la ficha multiplo de 5
+:- dynamic multiplo5/1.
+multiplo5([0,0]).
+
 
 
 
@@ -78,6 +83,7 @@ repartirFichas(_, 0, [], []).
 repartirFichas([H1, H2 | T], N, [H1 | FichasJ1], [H2 | FichasJ2]):-
     N > 0,
     N1 is N-1,
+    retract(fichas(_)), assertz(fichas(T)),
     repartirFichas(T, N1, FichasJ1, FichasJ2).
 
 
@@ -94,7 +100,7 @@ imprimirFichasJugador(Jugador, Fichas):-
 contiene_Mula55( _, 0):- 
     jugador(jugador1, FichasJ1),
     write("Ningún jugador tiene la mula del 5"), nl,
-    retract(turno(_)), assertz(turno(jugador2)),
+    retract(turno(_)), assertz(turno(jugador1)),
     contiene_Multipo5(FichasJ1, 2).
 
 contiene_Mula55(Fichas, N):-
@@ -116,18 +122,17 @@ contiene_Mula55(Fichas, N):-
 
 %Validar si algun jugador puede colocar alguna ficha con un 5
 contiene_Multipo5(_, 0):- 
-    write("Ningún jugador puede colocar una ficha múltiplo de 5"), nl, !.
-    %terminar_juego().
+    write("Ningún jugador puede colocar una ficha múltiplo de 5"), nl, !,
+    terminar_juego().
 
 contiene_Multipo5(Fichas, N):-
     (
-        member([5,_], Fichas)
-        ;   
-        member([_,5], Fichas)
+        %validar si alguna ficha es multiplo de 5 usando multiplo5
+        tieneMultiplo5(Fichas)
     ) -> 
     	(   turno(JugadorEnTurno),
         write("El "), write(JugadorEnTurno), write(" tiene una ficha múltiplo de 5"), nl,
-        jugar
+        colocarMultiplo5(Fichas)
         ),
     	!
     ;
@@ -204,8 +209,7 @@ puedeColocarFicha(Jugador) :-
         colocarFicha(Jugador, Lugar)
     ;   write("El jugador no tiene fichas que pueda poner"), nl,
         hayFichasReserva -> 
-            (   write("El jugador roba una ficha"), nl,
-            robarFicha(Jugador))
+            (  robarFicha(Jugador))
         ;
             write("No hay fichas para robar"), nl,
             terminar_juego.
@@ -245,19 +249,23 @@ colocarFicha(Jugador, Lugar) :-
     select(Ficha, Fichas, FichasNuevas),
     retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
     (
-        Lugar == "arriba" -> 
-            (retract(extremos([_, Ab, Iz, De])), assertz(extremos([Extremo, Ab, Iz, De])),
-            retract(fila_vertical(FilaV)), assertz(fila_vertical([Ficha|FilaV])))
-        ;   Lugar == "abajo" -> 
-            (retract(extremos([Arr, _, Iz, De])), assertz(extremos([Arr, Extremo, Iz, De])),
-            retract(fila_vertical(FilaV)), assertz(fila_vertical([Ficha|FilaV])))
-        ;   Lugar == "izquierda" -> 
-            (retract(extremos([Arr, Ab, _, De])), assertz(extremos([Arr, Ab, Extremo, De])),
-            retract(fila_horizontal(FilaH)), assertz(fila_horizontal([Ficha|FilaH])))
-        ;   Lugar == "derecha" -> 
-            (retract(extremos([Arr, Ab, Iz, _])), assertz(extremos([Arr, Ab, Iz, Extremo])),
-            retract(fila_horizontal(FilaH)), assertz(fila_horizontal([Ficha|FilaH])))
-    ),
+    Lugar == "arriba" -> 
+        (retract(extremos([_, Ab, Iz, De])), assertz(extremos([Extremo, Ab, Iz, De])),
+            (Extremo = Arr -> retract(mula(_)), assertz(mula([2, Ab, Iz, De])) ; retract(mula(_)), assertz(mula([1, Ab, Iz, De])) ),
+        retract(fila_vertical(FilaV)), append([Ficha], FilaV, NuevaFilaV), assertz(fila_vertical(NuevaFilaV)))
+    ;   Lugar == "abajo" -> 
+        (retract(extremos([Arr, _, Iz, De])), assertz(extremos([Arr, Extremo, Iz, De])),
+            (Extremo = Ab -> retract(mula(_)), assertz(mula([Arr, 2, Iz, De])) ; retract(mula(_)), assertz(mula([Arr, 1, Iz, De])) ),
+        retract(fila_vertical(FilaV)), append(FilaV, [Ficha], NuevaFilaV), assertz(fila_vertical(NuevaFilaV)))
+    ;   Lugar == "izquierda" -> 
+        (retract(extremos([Arr, Ab, _, De])), assertz(extremos([Arr, Ab, Extremo, De])),
+            (Extremo = Iz -> retract(mula(_)), assertz(mula([Arr, Ab, 2, De])) ; retract(mula(_)), assertz(mula([Arr, Ab, 1, De])) ),
+        retract(fila_horizontal(FilaH)), append([Ficha], FilaH, NuevaFilaH), assertz(fila_horizontal(NuevaFilaH)))
+    ;   Lugar == "derecha" -> 
+        (retract(extremos([Arr, Ab, Iz, _])), assertz(extremos([Arr, Ab, Iz, Extremo])),
+             (Extremo = De -> retract(mula(_)), assertz(mula([Arr, Ab, Iz, 2])) ; retract(mula(_)), assertz(mula([Arr, Ab, Iz, 1])) ),
+        retract(fila_horizontal(FilaH)), append(FilaH, [Ficha], NuevaFilaH), assertz(fila_horizontal(NuevaFilaH)))
+	),
     sumarPuntaje(Jugador),
     write("La ficha "), write(Ficha), write(" ha sido colocada en la fila "), write(Lugar), nl.
 
@@ -300,24 +308,54 @@ robarFicha(Jugador):-
 sumarPuntaje(jugador1):-
     puntaje([PuntajeJ1, PuntajeJ2]),
     extremos([Arr, Ab, Iz, De]),
-    PuntajeJ1N is PuntajeJ1 + Arr + Ab + Iz + De,
+    mula([MulaArr, MulaAb, MulaIz, MulaDe]),
+    Modulo is (Arr * MulaArr) + (Ab * MulaAb) + (Iz * MulaIz) + (De * MulaDe),
+    PuntajeJ1N is PuntajeJ1 + (Modulo - mod(Modulo, 5)),
     retract(puntaje(_)), assertz(puntaje([PuntajeJ1N, PuntajeJ2])).
 
 sumarPuntaje(jugador2):-
     puntaje([PuntajeJ1, PuntajeJ2]),
     extremos([Arr, Ab, Iz, De]),
-    PuntajeJ2N is PuntajeJ2 + Arr + Ab + Iz + De,
+    mula([MulaArr, MulaAb, MulaIz, MulaDe]),
+    Modulo is (Arr * MulaArr) + (Ab * MulaAb) + (Iz * MulaIz) + (De * MulaDe),
+    PuntajeJ2N is PuntajeJ2 + (Modulo - mod(Modulo, 5)),
     retract(puntaje(_)), assertz(puntaje([PuntajeJ1, PuntajeJ2N])).
 
 
+%validar que tenga una ficha cuya suma de sus lados sea multipo de 5
+validarMultiplo5([X,Y]):-
+    0 is (X+Y) mod 5 
+    -> retract(multiplo5(_)), assertz(multiplo5([X,Y]))
+    ; false.
+
+tieneMultiplo5([Ficha | Resto]):-
+    validarMultiplo5(Ficha)
+    -> true
+    ; tieneMultiplo5(Resto).
+
+tieneMultiplo5([]):- false.
 
 
 
+%Colocar ficha multiplo de 5
+colocarMultiplo5([Ficha | Resto]):-
+    validarMultiplo5(Ficha)
+    -> colocarFichaMultiplo5(Ficha)
+    ; colocarMultiplo5(Resto).
 
 
-
-
-
+colocarFichaMultiplo5([X,Y]):-
+    turno(Jugador),
+    jugador(Jugador, Fichas),
+    select([X,Y], Fichas, FichasNuevas),
+    retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
+    retract(multiplo5(_)), assertz(multiplo5([X,Y])),
+    retract(extremos([_, _, _, _])),
+    assertz(extremos([X,Y,X,Y])),
+    retract(fila_horizontal(_)), assertz(fila_horizontal([X,Y])),
+    retract(fila_vertical(_)), assertz(fila_vertical([X,Y])),
+    write("La ficha "), write([X,Y]), write(" ha sido colocada en el tablero"), nl,
+    cambiarTurno(Jugador).
 
 
 
@@ -332,7 +370,43 @@ sumarPuntaje(jugador2):-
 %El juego termina
 terminar_juego:-
     write("El juego ha terminado"), nl,
+    imprimir_filas.
+
+%mostrar ambas filas
+imprimir_filas:-
+    fila_horizontal(FilaH),
+    fila_vertical(FilaV),
+    write("Fila horizontal: "), write(FilaH), nl,
+    write("Fila vertical: "), write(FilaV), nl,
     imprimir_puntaje.
+
+    
+
+%sumar las fichas del perdedor al puntaje del ganador
+%se suman los puntos de cada lado de la ficha y se redondea al multiplo de 5 mas cercano
+%se suma el puntaje al jugador que tiene el turno
+sumar_fichas_perdedor:-
+    jugador(jugador1, FichasJ1),
+    jugador(jugador2, FichasJ2),
+    puntaje([P1, P2]),
+    (
+        length(FichasJ1, N1), length(FichasJ2, N2),
+        N1 > N2 -> 
+            sumar_fichas(FichasJ2, P1, P2, P1N, P2)
+        ; 
+            sumar_fichas(FichasJ1, P2, P1, P2N, P1)
+    ),
+    retract(puntaje(_)), assertz(puntaje([P1N, P2N])),
+    imprimir_puntaje.
+
+sumar_fichas([], P1, P2, P1, P2).
+sumar_fichas([[X,Y] | Resto], P1, P2, P1N, P2):-
+    Modulo is (X + Y) - mod((X + Y), 5),
+    P1N1 is P1 + Modulo,
+    sumar_fichas(Resto, P1N1, P2, P1N, P2).
+
+
+
 
 %Imprimir puntaje de cada jugador
 imprimir_puntaje:-
