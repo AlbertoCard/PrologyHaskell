@@ -179,7 +179,6 @@ colocarMula5:-
     retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
     retract(fila_horizontal(FilaH)), assertz(fila_horizontal([5,5|FilaH])),
     retract(fila_vertical(FilaV)), assertz(fila_vertical([5,5|FilaV])),
-    sumaPuntaje(Jugador),
     write("La mula del 5 ha sido colocada"), nl.
 
 
@@ -192,36 +191,36 @@ puedeColocarFicha(Jugador) :-
         member([Arr, Extremo], Fichas), Ficha = [Arr, Extremo], select(Ficha, Fichas, FichasNuevas),
         retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
         retract(extremos([_, Ab, Iz, De])), assertz(extremos([Extremo, Ab, Iz, De])),
-        retract(fila_vertical(FilaV)), assertz(fila_vertical([Ficha|FilaV])),
+        retract(fila_vertical(FilaV)), assertz(fila_vertical([Ficha|FilaV]))
         ;   
         member([Ab, Extremo], Fichas), Ficha = [Ab, Extremo], select(Ficha, Fichas, FichasNuevas),
         retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
         retract(extremos([Arr, _, Iz, De])), assertz(extremos([Arr, Extremo, Iz, De])),
-        retract(fila_vertical(FilaV)), assertz(fila_vertical([Ficha|FilaV])),
+        retract(fila_vertical(FilaV)), assertz(fila_vertical([Ficha|FilaV]))
         ;   
         member([Iz, Extremo], Fichas), Ficha = [Iz, Extremo], select(Ficha, Fichas, FichasNuevas),
         retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
         retract(extremos([Arr, Ab, _, De])), assertz(extremos([Arr, Ab, Extremo, De])),
-        retract(fila_horizontal(FilaH)), assertz(fila_horizontal([Ficha|FilaH])),
+        retract(fila_horizontal(FilaH)), assertz(fila_horizontal([Ficha|FilaH]))
         ;   
         member([De, Extremo], Fichas), Ficha = [De, Extremo], select(Ficha, Fichas, FichasNuevas),
         retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
-        retract(extremos([Arr, Ab, Iz, _])), assertz(extremos([Arr, Ab, Iz, Extremo])),
+        retract(extremos([Arr, Ab, Iz, _])), assertz(extremos([Arr, Ab, Iz, Extremo]))
         ;   
         member([Extremo, Arr], Fichas), Ficha = [Extremo, Arr], select(Ficha, Fichas, FichasNuevas),
         retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
         retract(extremos([_, Ab, Iz, De])), assertz(extremos([Extremo, Ab, Iz, De])),
-        retract(fila_vertical(FilaV)), assertz(fila_vertical([Ficha|FilaV])),
+        retract(fila_vertical(FilaV)), assertz(fila_vertical([Ficha|FilaV]))
         ;   
         member([Extremo, Ab], Fichas), Ficha = [Extremo, Ab], select(Ficha, Fichas, FichasNuevas),
         retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
         retract(extremos([Arr, _, Iz, De])), assertz(extremos([Arr, Extremo, Iz, De])),
-        retract(fila_vertical(FilaV)), assertz(fila_vertical([Ficha|FilaV])),
+        retract(fila_vertical(FilaV)), assertz(fila_vertical([Ficha|FilaV]))
         ;   
         member([Extremo, Iz], Fichas), Ficha = [Extremo, Iz], select(Ficha, Fichas, FichasNuevas),
         retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),
         retract(extremos([Arr, Ab, _, De])), assertz(extremos([Arr, Ab, Extremo, De])),
-        retract(fila_horizontal(FilaH)), assertz(fila_horizontal([Ficha|FilaH])),
+        retract(fila_horizontal(FilaH)), assertz(fila_horizontal([Ficha|FilaH]))
         ;   
         member([Extremo, De], Fichas), Ficha = [Extremo, De], select(Ficha, Fichas, FichasNuevas),
         retract(jugador(Jugador,_)), assertz(jugador(Jugador, FichasNuevas)),

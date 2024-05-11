@@ -162,12 +162,22 @@ jugar:-
 
 %Cambiar turno
 cambiarTurno(jugador1):-
+    extremos([Arr, Ab, Iz, De]),
+    write("Extremos: "), write([Arr, Ab, Iz, De]), nl,
+    puntaje([P1, P2]),
+    write("Puntaje del jugador 1: "), write(P1), nl,
+    write("Puntaje del jugador 2: "), write(P2), nl,
     retract(turno(_)),
     assertz(turno(jugador2)),
     write("Cambiando al turno del jugador 2"), nl,
     jugar.
 
 cambiarTurno(jugador2):-
+    extremos([Arr, Ab, Iz, De]),
+    write("Extremos: "), write([Arr, Ab, Iz, De]), nl,
+    puntaje([P1, P2]),
+    write("Puntaje del jugador 1: "), write(P1), nl,
+    write("Puntaje del jugador 2: "), write(P2), nl,
     retract(turno(_)),
     assertz(turno(jugador1)),
     write("Cambiando al turno del jugador 1"), nl,
@@ -219,6 +229,7 @@ puedeColocarFicha(Jugador) :-
 %Colocar una ficha en el tablero
 colocarFicha(Jugador, Lugar) :-
     extremos([Arr, Ab, Iz, De]),
+    mula([MulaArr, MulaAb, MulaIz, MulaDe]),
     jugador(Jugador, Fichas),
     (
         Lugar == "arriba",
@@ -251,19 +262,19 @@ colocarFicha(Jugador, Lugar) :-
     (
     Lugar == "arriba" -> 
         (retract(extremos([_, Ab, Iz, De])), assertz(extremos([Extremo, Ab, Iz, De])),
-            (Extremo = Arr -> retract(mula(_)), assertz(mula([2, Ab, Iz, De])) ; retract(mula(_)), assertz(mula([1, Ab, Iz, De])) ),
+            (Extremo = Arr -> retract(mula(_)), assertz(mula([2, MulaAb, MulaIz, MulaDe])) ; retract(mula(_)), assertz(mula([1, MulaAb, MulaIz, MulaDe])) ),
         retract(fila_vertical(FilaV)), append([Ficha], FilaV, NuevaFilaV), assertz(fila_vertical(NuevaFilaV)))
     ;   Lugar == "abajo" -> 
         (retract(extremos([Arr, _, Iz, De])), assertz(extremos([Arr, Extremo, Iz, De])),
-            (Extremo = Ab -> retract(mula(_)), assertz(mula([Arr, 2, Iz, De])) ; retract(mula(_)), assertz(mula([Arr, 1, Iz, De])) ),
+            (Extremo = Ab -> retract(mula(_)), assertz(mula([MulaArr, 2, MulaIz, MulaDe])) ; retract(mula(_)), assertz(mula([MulaArr, 1, MulaIz, MulaDe])) ),
         retract(fila_vertical(FilaV)), append(FilaV, [Ficha], NuevaFilaV), assertz(fila_vertical(NuevaFilaV)))
     ;   Lugar == "izquierda" -> 
         (retract(extremos([Arr, Ab, _, De])), assertz(extremos([Arr, Ab, Extremo, De])),
-            (Extremo = Iz -> retract(mula(_)), assertz(mula([Arr, Ab, 2, De])) ; retract(mula(_)), assertz(mula([Arr, Ab, 1, De])) ),
+            (Extremo = Iz -> retract(mula(_)), assertz(mula([MulaArr, MulaAb, 2, MulaDe])) ; retract(mula(_)), assertz(mula([MulaArr, MulaAb, 1, MulaDe])) ),
         retract(fila_horizontal(FilaH)), append([Ficha], FilaH, NuevaFilaH), assertz(fila_horizontal(NuevaFilaH)))
     ;   Lugar == "derecha" -> 
         (retract(extremos([Arr, Ab, Iz, _])), assertz(extremos([Arr, Ab, Iz, Extremo])),
-             (Extremo = De -> retract(mula(_)), assertz(mula([Arr, Ab, Iz, 2])) ; retract(mula(_)), assertz(mula([Arr, Ab, Iz, 1])) ),
+             (Extremo = De -> retract(mula(_)), assertz(mula([MulaArr, MulaAb, MulaIz, 2])) ; retract(mula(_)), assertz(mula([MulaArr, MulaAb, MulaIz, 1])) ),
         retract(fila_horizontal(FilaH)), append(FilaH, [Ficha], NuevaFilaH), assertz(fila_horizontal(NuevaFilaH)))
 	),
     sumarPuntaje(Jugador),
@@ -355,16 +366,19 @@ colocarFichaMultiplo5([X,Y]):-
     retract(fila_horizontal(_)), assertz(fila_horizontal([X,Y])),
     retract(fila_vertical(_)), assertz(fila_vertical([X,Y])),
     write("La ficha "), write([X,Y]), write(" ha sido colocada en el tablero"), nl,
+    sumar_puntajeMult5(Jugador, [X,Y]),
     cambiarTurno(Jugador).
 
 
+sumar_puntajeMult5(jugador1, [X,Y]):-
+    puntaje([P1, P2]),
+    NP is P1 + (X + Y),
+    retract(puntaje(_)), assertz(puntaje([NP, P2])).
 
-
-
-
-
-
-
+sumar_puntajeMult5(jugador2, [X,Y]):-
+    puntaje([P1, P2]),
+    NP is P2 + (X + Y),
+    retract(puntaje(_)), assertz(puntaje([P1, NP])).
 
 
 %El juego termina
@@ -378,7 +392,7 @@ imprimir_filas:-
     fila_vertical(FilaV),
     write("Fila horizontal: "), write(FilaH), nl,
     write("Fila vertical: "), write(FilaV), nl,
-    imprimir_puntaje.
+    sumar_fichas_perdedor.
 
     
 
@@ -388,29 +402,40 @@ imprimir_filas:-
 sumar_fichas_perdedor:-
     jugador(jugador1, FichasJ1),
     jugador(jugador2, FichasJ2),
-    puntaje([P1, P2]),
-    (
-        length(FichasJ1, N1), length(FichasJ2, N2),
-        N1 > N2 -> 
-            sumar_fichas(FichasJ2, P1, P2, P1N, P2)
-        ; 
-            sumar_fichas(FichasJ1, P2, P1, P2N, P1)
-    ),
-    retract(puntaje(_)), assertz(puntaje([P1N, P2N])),
+    sumar_final(FichasJ1),
+    sumar_final(FichasJ2),
     imprimir_puntaje.
 
-sumar_fichas([], P1, P2, P1, P2).
-sumar_fichas([[X,Y] | Resto], P1, P2, P1N, P2):-
-    Modulo is (X + Y) - mod((X + Y), 5),
-    P1N1 is P1 + Modulo,
-    sumar_fichas(Resto, P1N1, P2, P1N, P2).
 
+sumar_final([[X,Y] | Resto]):-
+    sumar_p1([X,Y]),
+    sumar_final(Resto).
+
+sumar_final([]).
+
+sumar_p1([X,Y]):-
+    puntaje([P1, P2]),
+    Np is X+Y,
+    NP is P1 + (Np - mod(Np, 5)),
+    retract(puntaje(_)), assertz(puntaje([NP, P2])).
+
+sumar_p1([]).
+
+sumar_p2([X,Y]):-
+    puntaje([P1, P2]),
+    Np is X+Y,
+    NP is P2 + (Np - mod(Np, 5)),
+    retract(puntaje(_)), assertz(puntaje([P1, NP])).
 
 
 
 %Imprimir puntaje de cada jugador
 imprimir_puntaje:-
     puntaje([P1, P2]),
+    jugador(jugador1, Fichas),
+    jugador(jugador2, Fichas2),
+    imprimirFichasJugador(jugador1, Fichas),
+    imprimirFichasJugador(jugador2, Fichas2),
     write("Puntaje del jugador 1: "), write(P1), nl,
     write("Puntaje del jugador 2: "), write(P2), nl,
     ganador.
