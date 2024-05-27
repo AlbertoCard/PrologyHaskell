@@ -27,3 +27,14 @@ sumarPares :: Int
 sumarPares = sum[x | x <- [1..10], mod x 2 == 0]
 
 
+{-3. (25 pts) con la pandemia la suma y la multiplicación se enfadaron y ahora funcionan diferente. 
+Cuando sumas dos números el resultado es el mayor de ellos 
+y cuando los multiplicas el resultado es el menor. 
+Ejemplo: 2+3=3 y 3*8=3. Elabore en haskell una función que haga el
+cálculo de la multiplicación para dos números.-}
+
+sumar :: Int -> Int -> Int
+sumar x y = if x > y then x else y
+
+multiplicar :: Int -> Int -> Int
+multiplicar x y = if x < y then x else y
